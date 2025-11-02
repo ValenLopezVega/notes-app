@@ -29,7 +29,7 @@ class Note(db.Model):
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
 
-    user_id: Mapped[int] = mapped_column(db.ForeignKey('user.id'), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('user.id', name="fk_note_user"), nullable=False)
 
     user: Mapped['User'] = relationship('User', back_populates='notes')
 
