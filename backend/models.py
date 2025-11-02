@@ -1,13 +1,22 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import String, Boolean, Text, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # Creamos la instancia de SQLAlchemy
 db = SQLAlchemy()
 
 # Ejemplo de modelo para notas
-class Note(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    content = db.Column(db.Text, nullable=False)
+class User(db.Model):
+    __tablename__= 'user'
 
-    def __repr__(self):
-        return f"<Note {self.title}>"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    fullname: Mapped[str] = mapped_column(String(50), nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(120), nullable=False)
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'fullname': self.fullname,
+            'email': self.email
+        }
