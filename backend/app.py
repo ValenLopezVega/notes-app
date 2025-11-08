@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
+from sqlalchemy.exc import IntegrityError, DataError
 
 from models import db, User, Note
 
@@ -47,11 +48,44 @@ def create_user():
 
     try:
         db.session.commit()
-        return jsonify({"message": "User created"}), 201
+        return jsonify({"message": "User created", "user": user.serialize()}), 201
     except Exception as error:
         db.session.rollback()
         return jsonify({"error": str(error)}), 500
 
+@app.route('/notes', methods=['POST'])
+def create_note():
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content')
+    user_id = data.get('user_id')
+
+    if not all([title, content, user_id]):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    note = Note(title=title, content=content, user_id=user_id)
+    db.session.add(note)
+
+    try:
+        db.session.commit()
+        return jsonify({
+            "message": "Note created",
+            "note": note.serialize()
+        }), 201
+
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Database integrity error"}), 400
+    except DataError:
+        db.session.rollback()
+        return jsonify({"error": "Data type or length error"}), 400
+    except Exception as error:
+        db.session.rollback()
+        return jsonify({"error": str(error)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
