@@ -53,6 +53,7 @@ def create_user():
         db.session.rollback()
         return jsonify({"error": str(error)}), 500
 
+
 @app.route('/notes', methods=['POST'])
 def create_note():
     data = request.get_json()
@@ -86,6 +87,65 @@ def create_note():
     except Exception as error:
         db.session.rollback()
         return jsonify({"error": str(error)}), 500
+
+
+@app.route('/notes', methods=['GET'])
+def get_notes():
+    user_id = request.args.get('user_id')
+
+    if user_id:
+        notes = Note.query.filter_by(user_id=user_id).all()
+    else:
+        notes = Note.query.all()
+
+    return jsonify([note.serialize() for note in notes]), 200
+
+
+@app.route('/notes/<int:note_id>', methods=['GET'])
+def get_note(note_id):
+    note = Note.query.get(note_id)
+    if not note:
+        return jsonify({"error":"note not found"}), 404
+
+    return jsonify(note.serialize()), 200
+
+
+@app.route('/notes/<int:note_id>', methods=['PATCH'])
+def change_note(note_id):
+    note = Note.query.get(note_id)
+    if not note:
+        return jsonify({"error":"note not found"}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    note.title = data.get('title', note.title)
+    note.content = data.get('content', note.content)
+
+    try:
+        db.session.commit()
+        return jsonify({"message": "Note updated", "note" : note.serialize()}), 200
+    except Exception as error:
+        db.session.rollback()
+        return jsonify({"error": str(error)}), 500
+
+
+@app.route('/notes/<int:note_id>', methods=['DELETE'])
+def delete_note(note_id):
+    note = Note.query.get(note_id)
+    if not note:
+        return jsonify({"error":"note not found"}), 404
+    try:
+        db.session.delete(note)
+        db.session.commit()
+        return jsonify({"message": "note deleted successfully"}), 200
+    except Exception as error:
+        db.session.rollback()
+        return jsonify({"error": str(error)}), 500
+
+
+print(app.url_map)
 
 if __name__ == "__main__":
     app.run(debug=True)
